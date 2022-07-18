@@ -18,8 +18,9 @@ import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 import java.util.*;
 
-@Mojo(name = "select", defaultPhase = LifecyclePhase.VALIDATE)
+@Mojo(name = "select", defaultPhase = LifecyclePhase.VALIDATE, threadSafe = true)
 public class ToolchainSelectorMojo extends AbstractMojo {
+    private static final Object LOCK = new Object();
 
     @Component
     private ToolchainManagerPrivate toolchainManagerPrivate;
@@ -80,7 +81,9 @@ public class ToolchainSelectorMojo extends AbstractMojo {
                 return;
             }
             getLog().info("Found toolchain for " + type + ":" + version);
-            toolchainManagerPrivate.storeToolchainToBuildContext(selected, session);
+            synchronized (LOCK) {
+                toolchainManagerPrivate.storeToolchainToBuildContext(selected, session);
+            }
         } catch (MisconfiguredToolchainException e) {
             throw new MojoExecutionException("An error occurred", e);
         }
