@@ -3,6 +3,7 @@ package io.codemc.maven.plugins.toolchain;
 import com.google.common.collect.Maps;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Plugin;
+import org.apache.maven.model.PluginContainer;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Component;
@@ -15,10 +16,7 @@ import org.apache.maven.toolchain.ToolchainManagerPrivate;
 import org.apache.maven.toolchain.ToolchainPrivate;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 @Mojo(name = "select", defaultPhase = LifecyclePhase.VALIDATE)
 public class ToolchainSelectorMojo extends AbstractMojo {
@@ -32,7 +30,7 @@ public class ToolchainSelectorMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project}", required = true, readonly = true)
     MavenProject project;
 
-    @Parameter(property = "toolchainType", required = false)
+    @Parameter(property = "toolchainType")
     String toolchainDefinition;
 
     @Parameter( property = "maven.compiler.target")
@@ -40,32 +38,25 @@ public class ToolchainSelectorMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException {
-        Plugin compilerPlugin = project.getPlugin("org.apache.maven.plugins:maven-compiler-plugin");
 
         String type;
-        String version = null;
+        String version;
         if (toolchainDefinition == null) {
             type = "jdk";
-            if (compilerPlugin != null) {
-                Xpp3Dom config = (Xpp3Dom) compilerPlugin.getConfiguration();
-                if (config != null) {
-                    Xpp3Dom target = config.getChild("target");
-                    if (target != null) {
-                        version = target.getValue();
-                    } else {
-                        Xpp3Dom release = config.getChild("release");
-                        if (release != null) {
-                            version = release.getValue();
-                        }
-                    }
-                }
-            }
-            if (version == null) {
-                version = target;
-            }
-            if (version.equals("8")) {
-                version = "1.8";
-            }
+
+            Plugin compilerPlugin = Optional.ofNullable(project.getPlugin("org.apache.maven.plugins:maven-compiler-plugin"))
+                    .orElseGet(() -> Optional.ofNullable(project.getPluginManagement())
+                            .map(PluginContainer::getPluginsAsMap)
+                            .map(pluginMap -> pluginMap.get("org.apache.maven.plugins:maven-compiler-plugin"))
+                            .orElse(null));
+
+            version = Optional.ofNullable(compilerPlugin)
+                    .map(plugin -> (Xpp3Dom) plugin.getConfiguration())
+                    .map(config -> Optional.ofNullable(config.getChild("target"))
+                            .orElseGet(() -> config.getChild("release")))
+                    .map(Xpp3Dom::getValue)
+                    .map(value -> value.equals("8") ? "1.8" : value)
+                    .orElseThrow(() -> new MojoExecutionException("Unable to deduct the wanted jdk version from the pom.xml file!"));
         } else {
             String[] splitted = toolchainDefinition.split(":");
             if (splitted.length != 2) {
@@ -74,6 +65,7 @@ public class ToolchainSelectorMojo extends AbstractMojo {
             type = splitted[0];
             version = splitted[1];
         }
+
         getLog().info("Looking for toolchain " + type + ":" + version);
 
         Map<String, String> requirements = new HashMap<>();
