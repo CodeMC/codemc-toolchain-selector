@@ -62,8 +62,8 @@ public class ToolchainSelectorMojo extends AbstractMojo {
                     .filter(toolchain -> toolchain.matchesRequirements(Maps.fromProperties(properties)))
                     .findFirst().orElse(null);
             if (selected == null) {
-                getLog().error("No toolchain for " + type + ":" + version);
-                throw new MojoExecutionException("Toolchain not found!");
+                getLog().info("No toolchain for " + type + ":" + version + ", continuing with the default toolchain...");
+                return;
             }
             getLog().info("Found toolchain for " + type + ":" + version);
             toolchainManagerPrivate.storeToolchainToBuildContext(selected, session);
