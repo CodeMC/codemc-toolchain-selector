@@ -2,6 +2,7 @@ package io.codemc.maven.plugins.toolchain;
 
 import com.google.common.collect.Maps;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Component;
@@ -12,6 +13,7 @@ import org.apache.maven.project.MavenProject;
 import org.apache.maven.toolchain.MisconfiguredToolchainException;
 import org.apache.maven.toolchain.ToolchainManagerPrivate;
 import org.apache.maven.toolchain.ToolchainPrivate;
+import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 import java.util.Arrays;
 import java.util.Properties;
@@ -31,16 +33,29 @@ public class ToolchainSelectorMojo extends AbstractMojo {
     @Parameter(property = "toolchainType", required = false)
     String toolchainDefinition;
 
-    @Parameter( property = "maven.compiler.target", defaultValue = "1.8" )
+    @Parameter( property = "maven.compiler.target")
     protected String target;
 
     @Override
     public void execute() throws MojoExecutionException {
+        Plugin compilerPlugin = project.getPlugin("org.apache.maven.plugins:maven-compiler-plugin");
+
         String type;
-        String version;
+        String version = null;
         if (toolchainDefinition == null) {
             type = "jdk";
-            version = target;
+            if (compilerPlugin != null) {
+                Xpp3Dom config = (Xpp3Dom) compilerPlugin.getConfiguration();
+                if (config != null) {
+                    Xpp3Dom target = config.getChild("target");
+                    if (target != null) {
+                        version = target.getValue();
+                    }
+                }
+            }
+            if (version == null) {
+                version = target;
+            }
             if (version.equals("8")) {
                 version = "1.8";
             }
