@@ -45,4 +45,15 @@
         </repository>
     </distributionManagement>
 
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <artifactId>maven-plugin-plugin</artifactId>
+                    <version>3.3</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
 </project>
