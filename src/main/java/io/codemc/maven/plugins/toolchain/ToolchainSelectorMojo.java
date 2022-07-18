@@ -16,6 +16,8 @@ import org.apache.maven.toolchain.ToolchainPrivate;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 @Mojo(name = "select", defaultPhase = LifecyclePhase.VALIDATE)
@@ -69,12 +71,12 @@ public class ToolchainSelectorMojo extends AbstractMojo {
         }
         getLog().info("Looking for toolchain " + type + ":" + version);
 
-        Properties properties = new Properties();
-        properties.setProperty("version", version);
+        Map<String, String> requirements = new HashMap<>();
+        requirements.put("version", version);
         try {
             ToolchainPrivate[] toolchains = toolchainManagerPrivate.getToolchainsForType(type, session);
             ToolchainPrivate selected = Arrays.stream(toolchains)
-                    .filter(toolchain -> toolchain.matchesRequirements(Maps.fromProperties(properties)))
+                    .filter(toolchain -> toolchain.matchesRequirements(requirements))
                     .findFirst().orElse(null);
             if (selected == null) {
                 getLog().info("No toolchain for " + type + ":" + version + ", continuing with the default toolchain...");
