@@ -52,6 +52,11 @@ public class ToolchainSelectorMojo extends AbstractMojo {
                     Xpp3Dom target = config.getChild("target");
                     if (target != null) {
                         version = target.getValue();
+                    } else {
+                        Xpp3Dom release = config.getChild("release");
+                        if (release != null) {
+                            version = release.getValue();
+                        }
                     }
                 }
             }
