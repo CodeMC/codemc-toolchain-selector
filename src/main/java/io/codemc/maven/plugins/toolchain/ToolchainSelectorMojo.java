@@ -56,8 +56,15 @@ public class ToolchainSelectorMojo extends AbstractMojo {
                     .map(config -> Optional.ofNullable(config.getChild("target"))
                             .orElseGet(() -> config.getChild("release")))
                     .map(Xpp3Dom::getValue)
-                    .map(value -> value.equals("8") ? "1.8" : value)
-                    .orElseThrow(() -> new MojoExecutionException("Unable to deduct the wanted jdk version from the pom.xml file!"));
+                    .orElse(target);
+
+            if (version == null) {
+                throw new MojoExecutionException("Unable to deduct the wanted jdk version from the pom.xml file!");
+            }
+
+            if (version.equals("8")) {
+                version = "1.8";
+            }
         } else {
             String[] splitted = toolchainDefinition.split(":");
             if (splitted.length != 2) {
