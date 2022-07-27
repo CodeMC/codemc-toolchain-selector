@@ -59,7 +59,8 @@ public class ToolchainSelectorMojo extends AbstractMojo {
                     .orElse(target);
 
             if (version == null) {
-                throw new MojoExecutionException("Unable to deduct the wanted jdk version from the pom.xml file!");
+                getLog().warn("No specific JDK version requested in the pom file! Falling back to the current maven toolchain.");
+                return;
             }
 
             if (version.equals("8")) {
